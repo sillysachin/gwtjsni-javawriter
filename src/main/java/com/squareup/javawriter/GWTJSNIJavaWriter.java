@@ -26,7 +26,7 @@ import javax.lang.model.element.Modifier;
 import static javax.lang.model.element.Modifier.ABSTRACT;
 
 /** A utility class which aids in generating Java source files. */
-public class JavaWriter implements Closeable {
+public class GWTJSNIJavaWriter implements Closeable {
   private static final Pattern TYPE_TRAILER = Pattern.compile("(.*?)(\\.\\.\\.|(?:\\[\\])+)$");
   private static final Pattern TYPE_PATTERN = Pattern.compile("(?:[\\w$]+\\.)*([\\w\\.*$]+)");
   private static final int MAX_SINGLE_LINE_ATTRIBUTES = 3;
@@ -36,16 +36,16 @@ public class JavaWriter implements Closeable {
   private final Map<String, String> importedTypes = new LinkedHashMap<String, String>();
 
   private String packagePrefix;
-  protected final Deque<Scope> scopes = new ArrayDeque<Scope>();
+  private final Deque<Scope> scopes = new ArrayDeque<Scope>();
   private final Deque<String> types = new ArrayDeque<String>();
-  protected final Writer out;
+  private final Writer out;
   private boolean isCompressingTypes = true;
   private String indent = INDENT;
 
   /**
    * @param out the stream to which Java source will be written. This should be a buffered stream.
    */
-  public JavaWriter(Writer out) {
+  public GWTJSNIJavaWriter(Writer out) {
     this.out = out;
   }
 
@@ -66,7 +66,7 @@ public class JavaWriter implements Closeable {
   }
 
   /** Emit a package declaration and empty line. */
-  public JavaWriter emitPackage(String packageName) throws IOException {
+  public GWTJSNIJavaWriter emitPackage(String packageName) throws IOException {
     if (this.packagePrefix != null) {
       throw new IllegalStateException();
     }
@@ -85,7 +85,7 @@ public class JavaWriter implements Closeable {
    * Emit an import for each {@code type} provided. For the duration of the file, all references to
    * these classes will be automatically shortened.
    */
-  public JavaWriter emitImports(String... types) throws IOException {
+  public GWTJSNIJavaWriter emitImports(String... types) throws IOException {
     return emitImports(Arrays.asList(types));
   }
 
@@ -93,7 +93,7 @@ public class JavaWriter implements Closeable {
    * Emit an import for each {@code type} provided. For the duration of the file, all references to
    * these classes will be automatically shortened.
    */
-  public JavaWriter emitImports(Class<?>... types) throws IOException {
+  public GWTJSNIJavaWriter emitImports(Class<?>... types) throws IOException {
     List<String> classNames = new ArrayList<String>(types.length);
     for (Class<?> classToImport : types) {
       classNames.add(classToImport.getCanonicalName());
@@ -105,7 +105,7 @@ public class JavaWriter implements Closeable {
    * Emit an import for each {@code type} in the provided {@code Collection}. For the duration of
    * the file, all references to these classes will be automatically shortened.
    */
-  public JavaWriter emitImports(Collection<String> types) throws IOException {
+  public GWTJSNIJavaWriter emitImports(Collection<String> types) throws IOException {
     for (String type : new TreeSet<String>(types)) {
       Matcher matcher = TYPE_PATTERN.matcher(type);
       if (!matcher.matches()) {
@@ -125,7 +125,7 @@ public class JavaWriter implements Closeable {
    * Emit a static import for each {@code type} provided. For the duration of the file,
    * all references to these classes will be automatically shortened.
    */
-  public JavaWriter emitStaticImports(String... types) throws IOException {
+  public GWTJSNIJavaWriter emitStaticImports(String... types) throws IOException {
     return emitStaticImports(Arrays.asList(types));
   }
 
@@ -133,7 +133,7 @@ public class JavaWriter implements Closeable {
    * Emit a static import for each {@code type} in the provided {@code Collection}. For the
    * duration of the file, all references to these classes will be automatically shortened.
    */
-  public JavaWriter emitStaticImports(Collection<String> types) throws IOException {
+  public GWTJSNIJavaWriter emitStaticImports(Collection<String> types) throws IOException {
     for (String type : new TreeSet<String>(types)) {
       Matcher matcher = TYPE_PATTERN.matcher(type);
       if (!matcher.matches()) {
@@ -154,7 +154,7 @@ public class JavaWriter implements Closeable {
    * compressing it with imports if possible. Type compression will only be enabled if
    * {@link #isCompressingTypes} is true.
    */
-  protected JavaWriter emitCompressedType(String type) throws IOException {
+  private GWTJSNIJavaWriter emitCompressedType(String type) throws IOException {
     if (isCompressingTypes) {
       out.write(compressType(type));
     } else {
@@ -241,7 +241,7 @@ public class JavaWriter implements Closeable {
    *
    * @param isStatic true if it should be an static initializer, false for an instance initializer.
    */
-  public JavaWriter beginInitializer(boolean isStatic) throws IOException {
+  public GWTJSNIJavaWriter beginInitializer(boolean isStatic) throws IOException {
     indent();
     if (isStatic) {
       out.write("static");
@@ -254,7 +254,7 @@ public class JavaWriter implements Closeable {
   }
 
   /** Ends the current initializer declaration. */
-  public JavaWriter endInitializer() throws IOException {
+  public GWTJSNIJavaWriter endInitializer() throws IOException {
     popScope(Scope.INITIALIZER);
     indent();
     out.write("}\n");
@@ -266,7 +266,7 @@ public class JavaWriter implements Closeable {
   *
   * @param kind such as "class", "interface" or "enum".
   */
-  public JavaWriter beginType(String type, String kind) throws IOException {
+  public GWTJSNIJavaWriter beginType(String type, String kind) throws IOException {
     return beginType(type, kind, EnumSet.noneOf(Modifier.class), null);
   }
 
@@ -275,7 +275,7 @@ public class JavaWriter implements Closeable {
    *
    * @param kind such as "class", "interface" or "enum".
    */
-  public JavaWriter beginType(String type, String kind, Set<Modifier> modifiers)
+  public GWTJSNIJavaWriter beginType(String type, String kind, Set<Modifier> modifiers)
       throws IOException {
     return beginType(type, kind, modifiers, null);
   }
@@ -286,7 +286,7 @@ public class JavaWriter implements Closeable {
    * @param kind such as "class", "interface" or "enum".
    * @param extendsType the class to extend, or null for no extends clause.
    */
-  public JavaWriter beginType(String type, String kind, Set<Modifier> modifiers, String extendsType,
+   public GWTJSNIJavaWriter beginType(String type, String kind, Set<Modifier> modifiers, String extendsType,
       String... implementsTypes) throws IOException {
     indent();
     emitModifiers(modifiers);
@@ -315,7 +315,7 @@ public class JavaWriter implements Closeable {
   }
 
   /** Completes the current type declaration. */
-  public JavaWriter endType() throws IOException {
+  public GWTJSNIJavaWriter endType() throws IOException {
     popScope(Scope.TYPE_DECLARATION, Scope.INTERFACE_DECLARATION);
     types.pop();
     indent();
@@ -324,18 +324,18 @@ public class JavaWriter implements Closeable {
   }
 
   /** Emits a field declaration. */
-  public JavaWriter emitField(String type, String name) throws IOException {
+  public GWTJSNIJavaWriter emitField(String type, String name) throws IOException {
     return emitField(type, name, EnumSet.noneOf(Modifier.class), null);
   }
 
   /** Emits a field declaration. */
-  public JavaWriter emitField(String type, String name, Set<Modifier> modifiers)
+  public GWTJSNIJavaWriter emitField(String type, String name, Set<Modifier> modifiers)
       throws IOException {
     return emitField(type, name, modifiers, null);
   }
 
   /** Emits a field declaration. */
-  public JavaWriter emitField(String type, String name, Set<Modifier> modifiers,
+  public GWTJSNIJavaWriter emitField(String type, String name, Set<Modifier> modifiers,
       String initialValue) throws IOException {
     indent();
     emitModifiers(modifiers);
@@ -373,9 +373,14 @@ public class JavaWriter implements Closeable {
    * @param modifiers the set of modifiers to be applied to the method
    * @param parameters alternating parameter types and names.
    */
-  public JavaWriter beginMethod(String returnType, String name, Set<Modifier> modifiers,
+  public GWTJSNIJavaWriter beginMethod(String returnType, String name, Set<Modifier> modifiers,
       String... parameters) throws IOException {
     return beginMethod(returnType, name, modifiers, Arrays.asList(parameters), null);
+  }
+  
+  public GWTJSNIJavaWriter beginJSNIMethod(String returnType, String name, Set<Modifier> modifiers,
+	      String... parameters) throws IOException {
+	    return beginJSNIMethod(returnType, name, modifiers, Arrays.asList(parameters), null);
   }
 
   /**
@@ -391,7 +396,7 @@ public class JavaWriter implements Closeable {
    * @param parameters alternating parameter types and names.
    * @param throwsTypes the classes to throw, or null for no throws clause.
    */
-  public JavaWriter beginMethod(String returnType, String name, Set<Modifier> modifiers,
+  public GWTJSNIJavaWriter beginMethod(String returnType, String name, Set<Modifier> modifiers,
       List<String> parameters, List<String> throwsTypes) throws IOException {
     indent();
     emitModifiers(modifiers);
@@ -434,14 +439,59 @@ public class JavaWriter implements Closeable {
     }
     return this;
   }
+  
+  public GWTJSNIJavaWriter beginJSNIMethod(String returnType, String name, Set<Modifier> modifiers,
+	      List<String> parameters, List<String> throwsTypes) throws IOException {
+    indent();
+    emitModifiers(modifiers);
+    if (returnType != null) {
+      emitCompressedType(returnType);
+      out.write(" ");
+      out.write(name);
+    } else {
+      emitCompressedType(name);
+    }
+    out.write("(");
+    if (parameters != null) {
+      for (int p = 0; p < parameters.size();) {
+        if (p != 0) {
+          out.write(", ");
+        }
+        emitCompressedType(parameters.get(p++));
+        out.write(" ");
+        emitCompressedType(parameters.get(p++));
+      }
+    }
+    out.write(")");
+    if (throwsTypes != null && throwsTypes.size() > 0) {
+      out.write("\n");
+      indent();
+      out.write("    throws ");
+      for (int i = 0; i < throwsTypes.size(); i++) {
+        if (i != 0) {
+          out.write(", ");
+        }
+        emitCompressedType(throwsTypes.get(i));
+      }
+    }
+    if (modifiers.contains(ABSTRACT) || Scope.INTERFACE_DECLARATION.equals(scopes.peek())) {
+      out.write(";\n");
+      scopes.push(Scope.ABSTRACT_METHOD);
+    } else {
+      out.write(" /*-{\n");
+      scopes.push(returnType == null ? Scope.CONSTRUCTOR : Scope.NON_ABSTRACT_METHOD);
+    }
+    return this;
+  }
 
-  public JavaWriter beginConstructor(Set<Modifier> modifiers, String... parameters)
+  public GWTJSNIJavaWriter beginConstructor(Set<Modifier> modifiers, String... parameters)
       throws IOException {
     beginMethod(null, rawType(types.peekFirst()), modifiers, parameters);
     return this;
   }
 
-  public JavaWriter beginConstructor(Set<Modifier> modifiers,
+  
+  public GWTJSNIJavaWriter beginConstructor(Set<Modifier> modifiers,
       List<String> parameters, List<String> throwsTypes)
       throws IOException {
     beginMethod(null, rawType(types.peekFirst()), modifiers, parameters, throwsTypes);
@@ -449,7 +499,7 @@ public class JavaWriter implements Closeable {
   }
 
   /** Emits some Javadoc comments with line separated by {@code \n}. */
-  public JavaWriter emitJavadoc(String javadoc, Object... params) throws IOException {
+  public GWTJSNIJavaWriter emitJavadoc(String javadoc, Object... params) throws IOException {
     String formatted = String.format(javadoc, params);
 
     indent();
@@ -469,7 +519,7 @@ public class JavaWriter implements Closeable {
   }
 
   /** Emits a single line comment. */
-  public JavaWriter emitSingleLineComment(String comment, Object... args) throws IOException {
+  public GWTJSNIJavaWriter emitSingleLineComment(String comment, Object... args) throws IOException {
     indent();
     out.write("// ");
     out.write(String.format(comment, args));
@@ -477,12 +527,12 @@ public class JavaWriter implements Closeable {
     return this;
   }
 
-  public JavaWriter emitEmptyLine() throws IOException {
+  public GWTJSNIJavaWriter emitEmptyLine() throws IOException {
     out.write("\n");
     return this;
   }
 
-  public JavaWriter emitEnumValue(String name) throws IOException {
+  public GWTJSNIJavaWriter emitEnumValue(String name) throws IOException {
     indent();
     out.write(name);
     out.write(",\n");
@@ -493,11 +543,11 @@ public class JavaWriter implements Closeable {
    * A simple switch to emit the proper enum depending if its last causing it to be terminated
    * by a semi-colon ({@code ;}).
    */
-  public JavaWriter emitEnumValue(String name, boolean isLast) throws IOException {
+  public GWTJSNIJavaWriter emitEnumValue(String name, boolean isLast) throws IOException {
     return isLast ? emitLastEnumValue(name) : emitEnumValue(name);
   }
 
-  private JavaWriter emitLastEnumValue(String name) throws IOException {
+  private GWTJSNIJavaWriter emitLastEnumValue(String name) throws IOException {
     indent();
     out.write(name);
     out.write(";\n");
@@ -505,7 +555,7 @@ public class JavaWriter implements Closeable {
   }
 
   /** Emit a list of enum values followed by a semi-colon ({@code ;}). */
-  public JavaWriter emitEnumValues(Iterable<String> names) throws IOException {
+  public GWTJSNIJavaWriter emitEnumValues(Iterable<String> names) throws IOException {
     Iterator<String> iterator = names.iterator();
 
     while (iterator.hasNext()) {
@@ -521,12 +571,12 @@ public class JavaWriter implements Closeable {
   }
 
   /** Equivalent to {@code annotation(annotation, emptyMap())}. */
-  public JavaWriter emitAnnotation(String annotation) throws IOException {
+  public GWTJSNIJavaWriter emitAnnotation(String annotation) throws IOException {
     return emitAnnotation(annotation, Collections.<String, Object>emptyMap());
   }
 
   /** Equivalent to {@code annotation(annotationType.getName(), emptyMap())}. */
-  public JavaWriter emitAnnotation(Class<? extends Annotation> annotationType) throws IOException {
+  public GWTJSNIJavaWriter emitAnnotation(Class<? extends Annotation> annotationType) throws IOException {
     return emitAnnotation(type(annotationType), Collections.<String, Object>emptyMap());
   }
 
@@ -537,7 +587,7 @@ public class JavaWriter implements Closeable {
    *     be encoded using Object.toString(); use {@link #stringLiteral} for String values. Object
    *     arrays are written one element per line.
    */
-  public JavaWriter emitAnnotation(Class<? extends Annotation> annotationType, Object value)
+  public GWTJSNIJavaWriter emitAnnotation(Class<? extends Annotation> annotationType, Object value)
       throws IOException {
     return emitAnnotation(type(annotationType), value);
   }
@@ -549,7 +599,7 @@ public class JavaWriter implements Closeable {
    *     be encoded using Object.toString(); use {@link #stringLiteral} for String values. Object
    *     arrays are written one element per line.
    */
-  public JavaWriter emitAnnotation(String annotation, Object value) throws IOException {
+  public GWTJSNIJavaWriter emitAnnotation(String annotation, Object value) throws IOException {
     indent();
     out.write("@");
     emitCompressedType(annotation);
@@ -561,7 +611,7 @@ public class JavaWriter implements Closeable {
   }
 
   /** Equivalent to {@code annotation(annotationType.getName(), attributes)}. */
-  public JavaWriter emitAnnotation(Class<? extends Annotation> annotationType,
+  public GWTJSNIJavaWriter emitAnnotation(Class<? extends Annotation> annotationType,
       Map<String, ?> attributes) throws IOException {
     return emitAnnotation(type(annotationType), attributes);
   }
@@ -573,7 +623,7 @@ public class JavaWriter implements Closeable {
    *     using Object.toString(); use {@link #stringLiteral} for String values. Object arrays are
    *     written one element per line.
    */
-  public JavaWriter emitAnnotation(String annotation, Map<String, ?> attributes)
+  public GWTJSNIJavaWriter emitAnnotation(String annotation, Map<String, ?> attributes)
       throws IOException {
     indent();
     out.write("@");
@@ -633,7 +683,7 @@ public class JavaWriter implements Closeable {
    * Writes a single annotation value. If the value is an array, each element in the array will be
    * written to its own line.
    */
-  private JavaWriter emitAnnotationValue(Object value) throws IOException {
+  private GWTJSNIJavaWriter emitAnnotationValue(Object value) throws IOException {
     if (value instanceof Object[]) {
       out.write("{");
       boolean firstValue = true;
@@ -662,7 +712,7 @@ public class JavaWriter implements Closeable {
    * @param pattern a code pattern like "int i = %s". Newlines will be further indented. Should not
    *     contain trailing semicolon.
    */
-  public JavaWriter emitStatement(String pattern, Object... args) throws IOException {
+  public GWTJSNIJavaWriter emitStatement(String pattern, Object... args) throws IOException {
     checkInMethod();
     String[] lines = String.format(pattern, args).split("\n", -1);
     indent();
@@ -680,7 +730,7 @@ public class JavaWriter implements Closeable {
    * @param controlFlow the control flow construct and its code, such as "if (foo == 5)". Shouldn't
    *     contain braces or newline characters.
    */
-  public JavaWriter beginControlFlow(String controlFlow, Object... args) throws IOException {
+  public GWTJSNIJavaWriter beginControlFlow(String controlFlow, Object... args) throws IOException {
     checkInMethod();
     indent();
     out.write(String.format(controlFlow, args));
@@ -693,7 +743,7 @@ public class JavaWriter implements Closeable {
    * @param controlFlow the control flow construct and its code, such as "else if (foo == 10)".
    *     Shouldn't contain braces or newline characters.
    */
-  public JavaWriter nextControlFlow(String controlFlow, Object... args) throws IOException {
+  public GWTJSNIJavaWriter nextControlFlow(String controlFlow, Object... args) throws IOException {
     popScope(Scope.CONTROL_FLOW);
     indent();
     scopes.push(Scope.CONTROL_FLOW);
@@ -703,7 +753,7 @@ public class JavaWriter implements Closeable {
     return this;
   }
 
-  public JavaWriter endControlFlow() throws IOException {
+  public GWTJSNIJavaWriter endControlFlow() throws IOException {
     return endControlFlow(null);
   }
 
@@ -711,7 +761,7 @@ public class JavaWriter implements Closeable {
    * @param controlFlow the optional control flow construct and its code, such as
    *     "while(foo == 20)". Only used for "do/while" control flows.
    */
-  public JavaWriter endControlFlow(String controlFlow, Object... args) throws IOException {
+  public GWTJSNIJavaWriter endControlFlow(String controlFlow, Object... args) throws IOException {
     popScope(Scope.CONTROL_FLOW);
     indent();
     if (controlFlow != null) {
@@ -725,7 +775,7 @@ public class JavaWriter implements Closeable {
   }
 
   /** Completes the current method declaration. */
-  public JavaWriter endMethod() throws IOException {
+  public GWTJSNIJavaWriter endMethod() throws IOException {
     Scope popped = scopes.pop();
     // support calling a constructor a "method" to support the legacy code
     if (popped == Scope.NON_ABSTRACT_METHOD || popped == Scope.CONSTRUCTOR) {
@@ -736,9 +786,20 @@ public class JavaWriter implements Closeable {
     }
     return this;
   }
-
+  
+  public GWTJSNIJavaWriter endJSNIMethod() throws IOException {
+    Scope popped = scopes.pop();
+    // support calling a constructor a "method" to support the legacy code
+    if (popped == Scope.NON_ABSTRACT_METHOD || popped == Scope.CONSTRUCTOR) {
+      indent();
+      out.write("}-*/;\n");
+    } else if (popped != Scope.ABSTRACT_METHOD) {
+      throw new IllegalStateException();
+    }
+    return this;
+  }
   /** Completes the current constructor declaration. */
-  public JavaWriter endConstructor() throws IOException {
+  public GWTJSNIJavaWriter endConstructor() throws IOException {
     popScope(Scope.CONSTRUCTOR);
     indent();
     out.write("}\n");
@@ -789,7 +850,7 @@ public class JavaWriter implements Closeable {
   }
 
   /** Emits the modifiers to the writer. */
-  protected void emitModifiers(Set<Modifier> modifiers) throws IOException {
+  private void emitModifiers(Set<Modifier> modifiers) throws IOException {
     if (modifiers.isEmpty()) {
       return;
     }
@@ -802,7 +863,7 @@ public class JavaWriter implements Closeable {
     }
   }
 
-  protected void indent() throws IOException {
+  private void indent() throws IOException {
     for (int i = 0, count = scopes.size(); i < count; i++) {
       out.write(indent);
     }
@@ -829,7 +890,7 @@ public class JavaWriter implements Closeable {
     }
   }
 
-  protected enum Scope {
+  private enum Scope {
     TYPE_DECLARATION,
     INTERFACE_DECLARATION,
     ABSTRACT_METHOD,
